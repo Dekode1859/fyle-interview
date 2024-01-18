@@ -1,4 +1,4 @@
-## Installation
+## How to run Docker
 1. Clone this repository
    ```
    git clone <git-repo-link>
