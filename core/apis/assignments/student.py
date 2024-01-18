@@ -1,8 +1,9 @@
-from flask import Blueprint
+from flask import Blueprint, jsonify, make_response
 from core import db
 from core.apis import decorators
 from core.apis.responses import APIResponse
-from core.models.assignments import Assignment
+from core.models.assignments import Assignment, AssignmentStateEnum, GradeEnum
+import werkzeug
 
 from .schema import AssignmentSchema, AssignmentSubmitSchema
 student_assignments_resources = Blueprint('student_assignments_resources', __name__)
@@ -21,6 +22,8 @@ def list_assignments(p):
 @decorators.accept_payload
 @decorators.authenticate_principal
 def upsert_assignment(p, incoming_payload):
+    if incoming_payload['content'] == None:
+        return werkzeug.Response(status=400)
     """Create or Edit an assignment"""
     assignment = AssignmentSchema().load(incoming_payload)
     assignment.student_id = p.student_id
@@ -37,12 +40,10 @@ def upsert_assignment(p, incoming_payload):
 def submit_assignment(p, incoming_payload):
     """Submit an assignment"""
     submit_assignment_payload = AssignmentSubmitSchema().load(incoming_payload)
-
-    submitted_assignment = Assignment.submit(
-        _id=submit_assignment_payload.id,
-        teacher_id=submit_assignment_payload.teacher_id,
-        auth_principal=p
+    # assignment = Assignment.get_by_id(submit_assignment_payload.id)
+    asubmitted_assignment = Assignment.submit(
+        submit_assignment_payload.id, submit_assignment_payload.teacher_id, p
     )
     db.session.commit()
-    submitted_assignment_dump = AssignmentSchema().dump(submitted_assignment)
+    submitted_assignment_dump = AssignmentSchema().dump(asubmitted_assignment)
     return APIResponse.respond(data=submitted_assignment_dump)
